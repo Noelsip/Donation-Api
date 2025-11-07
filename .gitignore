@@ -4,3 +4,12 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+package-lock.json
+yarn.lock
+npm-debug.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+coverage/
