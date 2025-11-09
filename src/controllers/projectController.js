@@ -13,10 +13,17 @@ const createProject = async (req, res) => {
         });
     }
 
-    if (!title || !target_amount) {
+    if (!title || title.trim() === '') {
         return res.status(400).json({
             ok: false,
-            message: 'Title dan target amount wajib diisi'
+            message: 'Title wajib diisi'
+        });
+    }
+
+    if (!target_amount || isNaN(target_amount) || target_amount <= 0) {
+        return res.status(400).json({
+            ok: false,
+            message: 'Target amount harus berupa angka positif'
         });
     }
 
@@ -67,9 +74,6 @@ const getAllProjects = async (req, res) => {
 
             console.log('Raw result from sp_list_user_projects:', JSON.stringify(result, null, 2));
 
-            // Result dari stored procedure biasanya array of arrays
-            // result[0] = data rows
-            // result[1] = metadata
             const projects = result[0] || [];
 
             res.status(200).json({
@@ -211,7 +215,14 @@ const deleteProject = async (req, res) => {
                     [projectId]
                 );
 
-                if (!projectResult[0] || projectResult[0].user_id !== userId) {
+                if (!projectResult || projectResult.length === 0) {
+                    return res.status(404).json({
+                        success: false,
+                        message: 'Project tidak ditemukan.'
+                    });
+                }
+
+                if (projectResult[0].user_id !== userId) {
                     return res.status(403).json({
                         success: false,
                         message: 'Anda tidak memiliki izin untuk menghapus project ini.'
@@ -247,11 +258,88 @@ const deleteProject = async (req, res) => {
     }
 };
 
+// Mencari project dengan keyword
+const searchProjects = async (req, res) => {
+    try {
+        const { keyword, limit = 20, offset = 0 } = req.query;
+
+        if (!keyword || keyword.trim() === '') {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Keyword pencarian tidak boleh kosong'
+             });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            const [result] = await conn.query(
+                'CALL sp_search_projects(?, ?, ?)',
+                [keyword, parseInt(limit, 10), parseInt(offset, 10)]
+            );
+
+            res.status(200).json({
+                success: true,
+                data: result[0],
+                count: result[0].length,
+                keyword: keyword,
+                message: 'Hasil pencarian project berhasil diambil'
+            });
+        } finally {
+            conn.release();
+        }
+    } catch (error) {
+        console.error('Error searching projects:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Internal server error' 
+        });
+    }
+}
+
+// Mengaktifkan project (admin only)
+const activateProject = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const adminId = req.user.user_id;
+
+        const conn = await pool.getConnection();
+        try {
+            const [result] = await conn.query(
+                'CALL sp_activate_project(?, ?)',
+                [projectId, adminId]
+            );
+
+            if (result[0][0].affected_rows === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Project tidak ditemukan atau sudah aktif.'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Project berhasil diaktifkan.',
+                data: result[0][0]
+            });
+        } finally {
+            conn.release();
+        }
+    } catch (error) {
+        console.error('Error activating project:', error);
+        res.status(500).json({
+            success: false,
+            message: error.sqlMessage || 'Terjadi kesalahan pada server saat mengaktifkan project.'
+        });
+    }
+}
+
 module.exports = {
     createProject,
     getAllProjects,
     getAllPublicProjects,
     getProjectById,
     updateProject,
-    deleteProject
+    deleteProject,
+    searchProjects,
+    activateProject
 };

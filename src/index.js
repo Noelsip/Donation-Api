@@ -10,6 +10,8 @@ const oauthRouter = require('./routes/oauth');
 const projectRouter = require('./routes/project');
 const adminRoutes = require('./routes/admin');
 const donationRouter = require('./routes/donation');
+const payoutRouter = require('./routes/payout');
+const verificationRouter = require('./routes/verification');
 
 dotenv.config();
 
@@ -37,6 +39,8 @@ app.use('/auth', oauthRouter);
 app.use('/project', projectRouter);
 app.use('/admin', adminRoutes);
 app.use('/donation', donationRouter);
+app.use('/payout', payoutRouter);
+app.use('/verification', verificationRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,() => {

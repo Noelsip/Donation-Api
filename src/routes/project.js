@@ -6,6 +6,7 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 // Public routes (tanpa auth) - untuk melihat semua project aktif
 router.get('/public', projectController.getAllPublicProjects);
 router.get('/public/:projectId', projectController.getProjectById);
+router.get('/search', projectController.searchProjects);
 
 // Protected routes (dengan auth) - untuk user melihat project miliknya
 router.post('/create', authMiddleware, projectController.createProject);
