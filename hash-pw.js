@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt');
 const pool = require('./src/config/sql');
 
 async function fixAdminPassword() {
-    const adminId = 19;
-    const password = 'admin123';
+    const adminId = 10;
+    const password = '123123123';
 
     try {
         // Generate hash baru
