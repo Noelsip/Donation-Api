@@ -12,5 +12,6 @@ router.post('/create', donationController.createDonation);
 
 // Midtrans webhook
 router.post('/webhook', donationController.handleWebhook);
+router.get('/finish', donationController.handleDonationFinish);
 
 module.exports = router;

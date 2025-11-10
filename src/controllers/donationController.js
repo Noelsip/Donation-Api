@@ -1,12 +1,26 @@
 const midtransClient = require('midtrans-client');
 const pool = require('../config/sql');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Initialize Midtrans Snap
-const snap = new midtransClient.Snap({
-    isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
-    serverKey: process.env.MIDTRANS_SERVER_KEY,
-    clientKey: process.env.MIDTRANS_CLIENT_KEY
-});
+const initMidtrans = () => {
+    const serverKey = process.env.MIDTRANS_SERVER_KEY;
+    const clientKey = process.env.MIDTRANS_CLIENT_KEY;
+
+    if (!serverKey || !clientKey) {
+        console.error('Midtrans keys tidak ditemukan')
+        throw new Error('Midtrans keys tidak ditemukan');
+    }
+
+    return new midtransClient.Snap({
+        isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+        serverKey: serverKey,
+        clientKey: clientKey
+    });
+}
+
+const snap = initMidtrans();
 
 // Create donation and get payment token
 const createDonation = async (req, res) => {
@@ -61,12 +75,20 @@ const createDonation = async (req, res) => {
                 }
             };
 
+            console.log('Midtrans Config:', {
+                isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+                serverKey: process.env.MIDTRANS_SERVER_KEY?.substring(0, 15) + '...',
+                url: process.env.MIDTRANS_IS_PRODUCTION === 'true' 
+                    ? 'https://app.midtrans.com' 
+                    : 'https://app.sandbox.midtrans.com'
+            });
+
             const transaction = await snap.createTransaction(parameter);
 
             // Create donation with external_id using webhook handler
             await conn.query(
-                'CALL sp_handle_payment_webhook(?, ?, ?, ?, ?, ?, ?)',
-                [orderId, project_id, donatorName, donatorEmail, amount, 'PENDING', 'MIDTRANS']
+                'CALL sp_handle_payment_webhook(?, ?, ?, ?, ?, ?)',
+                [orderId, project_id, donatorName, donatorEmail, amount, 'PENDING']
             );
 
             res.status(200).json({
@@ -219,9 +241,110 @@ const checkDonationStatus = async (req, res) => {
     }
 };
 
+// Handle donation finish (redirect from Midtrans)
+const handleDonationFinish = async (req, res) => {
+    try {
+        const { order_id, status_code, transaction_status } = req.query;
+
+        console.log('Finish payment redirect:', {
+            order_id,
+            status_code,
+            transaction_status
+        });
+
+        if (!order_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID tidak ditemukan'
+            });
+        }
+
+        const conn = await pool.getConnection();
+        try {
+            // Get donation details
+            const [donationResult] = await conn.query(
+                'CALL sp_get_donation_by_external_id(?)',
+                [order_id]
+            );
+
+            if (!donationResult[0] || donationResult[0].length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Donasi tidak ditemukan',
+                    data: {
+                        order_id
+                    }
+                });
+            }
+
+            const donation = donationResult[0][0];
+
+            // Get project details
+            const [projectResult] = await conn.query(
+                'CALL sp_get_project_detail(?)',
+                [donation.project_id]
+            );
+
+            const project = projectResult[0] && projectResult[0][0] ? projectResult[0][0] : null;
+
+            // Determine status message based on transaction status
+            let paymentStatus = 'PENDING';
+            let statusMessage = 'Pembayaran sedang diproses';
+
+            if (transaction_status === 'settlement' || transaction_status === 'capture') {
+                paymentStatus = 'COMPLETED';
+                statusMessage = 'Pembayaran berhasil';
+            } else if (['cancel', 'deny', 'expire', 'failure'].includes(transaction_status)) {
+                paymentStatus = 'FAILED';
+                statusMessage = 'Pembayaran gagal atau dibatalkan';
+            } else if (transaction_status === 'pending') {
+                paymentStatus = 'PENDING';
+                statusMessage = 'Menunggu pembayaran';
+            }
+
+            res.status(200).json({
+                success: true,
+                message: statusMessage,
+                data: {
+                    order_id,
+                    transaction_status,
+                    status_code,
+                    payment_status: paymentStatus,
+                    donation: {
+                        id: donation.donation_id,
+                        donator_name: donation.donator_name,
+                        donator_email: donation.donator_email,
+                        amount: parseFloat(donation.donation_amount),
+                        paid_at: donation.paid_at,
+                        created_at: donation.created_at
+                    },
+                    project: project ? {
+                        id: project.project_id,
+                        name: project.project_name,
+                        description: project.description,
+                        target_amount: parseFloat(project.target_amount),
+                        collected_amount: parseFloat(project.collected_amount),
+                        progress: parseFloat(project.progress_percentage)
+                    } : null
+                }
+            });
+        } finally {
+            conn.release();
+        }
+    } catch (error) {
+        console.error('Error handling donation finish:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat memproses data donasi',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     createDonation,
     handleWebhook,
     getPublicDonations,
-    checkDonationStatus
+    checkDonationStatus,
+    handleDonationFinish
 };

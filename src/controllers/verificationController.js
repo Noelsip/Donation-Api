@@ -16,7 +16,7 @@ const uploadVerification = async (req, res) => {
         const conn = await pool.getConnection();
         try {
             const [result] = await conn.query(
-                'CALL sp__upload_fundraiser_verification(?, ?, ?)',
+                'CALL sp_upload_fundraiser_verification(?, ?, ?)',
                 [userId, doc_path, notes || null]
             );
 
