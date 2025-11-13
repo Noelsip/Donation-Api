@@ -117,15 +117,25 @@ const handleWebhook = async (req, res) => {
     try {
         const notification = req.body;
 
-        // Verify notification
-        const statusResponse = await snap.transaction.notification(notification);
+        console.log('Webhook received:', JSON.stringify(notification, null, 2));
 
-        const orderId = statusResponse.order_id;
-        const transactionStatus = statusResponse.transaction_status;
-        const fraudStatus = statusResponse.fraud_status;
+        // Validasi notification
+        if (!notification.order_id) {
+            console.error('Order ID tidak ditemukan dalam notification');
+            return res.status(400).json({
+                success: false,
+                message: 'Order ID tidak ditemukan'
+            });
+        }
+
+        const orderId = notification.order_id;
+        const transactionStatus = notification.transaction_status;
+        const fraudStatus = notification.fraud_status;
 
         console.log(`Transaction notification: ${orderId} - ${transactionStatus}`);
 
+        // PERBAIKAN: Jangan gunakan snap.transaction.notification()
+        // Langsung proses berdasarkan notification body yang dikirim Midtrans
         let paymentStatus = 'PENDING';
 
         if (transactionStatus === 'capture') {
@@ -147,6 +157,7 @@ const handleWebhook = async (req, res) => {
             );
 
             if (!donationResult[0] || donationResult[0].length === 0) {
+                console.error('Donation not found for order:', orderId);
                 return res.status(404).json({
                     success: false,
                     message: 'Donasi tidak ditemukan'
@@ -155,25 +166,36 @@ const handleWebhook = async (req, res) => {
 
             const donation = donationResult[0][0];
 
+            console.log('Current donation status:', donation.payment_status);
+            console.log('New payment status:', paymentStatus);
+
             // Update donation status
-            if (paymentStatus === 'COMPLETED') {
+            if (paymentStatus === 'COMPLETED' && donation.payment_status !== 'COMPLETED') {
                 await conn.query('CALL sp_confirm_donation(?)', [donation.donation_id]);
-            } else if (paymentStatus === 'FAILED') {
+                console.log('✅ Donation confirmed:', donation.donation_id);
+            } else if (paymentStatus === 'FAILED' && donation.payment_status === 'PENDING') {
                 await conn.query('CALL sp_fail_donation(?)', [donation.donation_id]);
+                console.log('❌ Donation marked as failed:', donation.donation_id);
+            } else {
+                console.log('ℹ️ No status update needed');
             }
 
             res.status(200).json({
                 success: true,
                 message: 'Webhook processed successfully'
             });
+        } catch (dbError) {
+            console.error('Database error in webhook:', dbError);
+            throw dbError;
         } finally {
             conn.release();
         }
     } catch (error) {
         console.error('Error handling webhook:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
-            message: error.sqlMessage || 'Gagal memproses webhook'
+            message: error.sqlMessage || error.message || 'Gagal memproses webhook'
         });
     }
 };

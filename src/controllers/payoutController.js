@@ -281,11 +281,67 @@ const cancelPayoutRequest = async (req, res) => {
     }
 };
 
+// Eligible project untuk payout  
+const checkPayoutEligibility = async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        const userId = req.user.user_id;
+
+        const conn = await pool.getConnection();
+        try {
+            const [projectResult] = await conn.query(
+                'CALL sp_get_project_detail(?)',
+                [projectId]
+            );
+
+            if (!projectResult[0] || projectResult[0].length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Proyek tidak ditemukan.'
+                });
+            }
+
+            const project = projectResult[0][0];
+
+            if (project.fundraiser_id !== userId) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak. Anda bukan pemilik proyek ini.'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Proyek eligible untuk payout.',
+                data: {
+                    project_id: project.project_id,
+                    project_name: project.project_name,
+                    project_status: project.project_status,
+                    collected_amount: parseFloat(project.collected_amount),
+                    total_paid_out: parseFloat(project.total_paid_out || 0),
+                    available_payout: parseFloat(project.available_payout || 0),
+                    can_request_payout: project.project_status === 'ACTIVE' && 
+                                       parseFloat(project.available_payout || 0) > 0
+                }
+            });
+        } finally {
+            conn.release();
+        }
+    } catch (error) {
+        console.error('Error checking payout eligibility:', error);
+        res.status(500).json({
+            success: false,
+            message: error.sqlMessage || 'Terjadi kesalahan pada server.'
+        });
+    }
+}
+
 module.exports = {
     requestPayout,
     getPayoutOverview,
     getMyPayouts,
     getPayoutById,
     getPendingPayouts,
-    cancelPayoutRequest
+    cancelPayoutRequest,
+    checkPayoutEligibility
 };
