@@ -3,16 +3,19 @@ const router = express.Router();
 const projectController = require('../controllers/projectController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 
-// Public routes (tanpa auth) - untuk melihat semua project aktif
-router.get('/public', projectController.getAllPublicProjects);
-router.get('/public/:projectId', projectController.getProjectById);
+router.get('/public', projectController.listActiveProjects);
 router.get('/search', projectController.searchProjects);
+router.get('/summary', projectController.getProjectSummary);
+router.get('/summary/:projectId', projectController.getProjectSummary);
+router.get('/:projectId', projectController.getProjectDetail);
+router.get('/:projectId/donations', projectController.getProjectDonations);
 
-// Protected routes (dengan auth) - untuk user melihat project miliknya
-router.post('/create', authMiddleware, projectController.createProject);
-router.get('/all', authMiddleware, projectController.getAllProjects);
-router.get('/:projectId', authMiddleware, projectController.getProjectById);
-router.put('/:projectId/update', authMiddleware, projectController.updateProject);
-router.delete('/:projectId/delete', authMiddleware, projectController.deleteProject);
+router.use(authMiddleware);
+
+router.post('/create', projectController.createProject);
+router.get('/user/all', projectController.getAllProjects);
+router.get('/user/finished', projectController.getFinishedProject);
+router.put('/:projectId', projectController.updateProject);
+router.delete('/:projectId/close', projectController.closeProject);
 
 module.exports = router;

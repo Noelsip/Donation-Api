@@ -2,52 +2,51 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const pool = require('./src/config/sql');
 
-async function fixAdminPassword() {
-    const adminId = 10;
-    const password = '123123123';
+async function createAdmin() {
+    const adminData = {
+        user_name: 'Admin',
+        email: 'admin@gmail.com',
+        password: '123123123'
+    };
 
     try {
-        // Generate hash baru
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(adminData.password, 10);
         console.log('Generated hash:', hashedPassword);
 
         const conn = await pool.getConnection();
         
         try {
-            // Update password
             const [result] = await conn.query(
-                'UPDATE users SET user_pass = ? WHERE id = ?',
-                [hashedPassword, adminId]
+                'INSERT INTO users (user_name, email, user_pass, role, created_at) VALUES (?, ?, ?, ?, NOW())',
+                [adminData.user_name, adminData.email, hashedPassword, 'ADMIN']
             );
             
-            console.log('Affected rows:', result.affectedRows);
+            console.log('Admin created with ID:', result.insertId);
 
-            // Verifikasi update
             const [rows] = await conn.query(
-                'SELECT id, email, user_pass FROM users WHERE id = ?',
-                [adminId]
+                'SELECT id, user_name, email, role FROM users WHERE id = ?',
+                [result.insertId]
             );
 
-            console.log('\n=== VERIFIKASI ===');
-            console.log('Data di database:', rows[0]);
-
-            // Test bcrypt compare
-            const testMatch = await bcrypt.compare(password, rows[0].user_pass);
-            console.log('\nTest password match:', testMatch);
-
-            if (testMatch) {
-                console.log('✅ Password berhasil di-update dan valid!');
-            } else {
-                console.log('❌ Ada masalah dengan hash!');
-            }
+            console.log('\n=== ADMIN ACCOUNT ===');
+            console.log('ID:', rows[0].id);
+            console.log('Name:', rows[0].user_name);
+            console.log('Email:', rows[0].email);
+            console.log('Role:', rows[0].role);
+            console.log('Password:', adminData.password);
+            console.log('✅ Admin berhasil dibuat!');
         } finally {
             conn.release();
         }
     } catch (error) {
-        console.error('Error:', error);
+        if (error.code === 'ER_DUP_ENTRY') {
+            console.error('❌ Email sudah terdaftar!');
+        } else {
+            console.error('Error:', error.message);
+        }
     } finally {
         process.exit();
     }
 }
 
-fixAdminPassword();
+createAdmin();

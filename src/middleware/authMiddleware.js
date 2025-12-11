@@ -12,7 +12,6 @@ const authMiddleware = (req, res, next) => {
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
-            ok: false,
             message: 'Akses ditolak. Token tidak ditemukan.'
         });
     }
@@ -33,7 +32,6 @@ const authMiddleware = (req, res, next) => {
     } catch (error) {
         console.error("Token verification failed:", error.message);
         return res.status(401).json({
-            ok: false,
             message: 'Token tidak valid atau sudah kadaluarsa.'
         });
     }
@@ -42,7 +40,6 @@ const authMiddleware = (req, res, next) => {
 const isAdmin = (req, res, next) => {
     if (!req.user || req.user.role !== 'ADMIN') {
         return res.status(403).json({
-            ok: false,
             message: 'Akses ditolak. Hanya admin yang dapat mengakses sumber daya ini.'
         });
     }

@@ -3,7 +3,6 @@ const pool = require('../config/sql');
 const dotenv = require('dotenv');
 dotenv.config();
 
-// Initialize Midtrans Snap
 const initMidtrans = () => {
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
     const clientKey = process.env.MIDTRANS_CLIENT_KEY;
@@ -22,24 +21,21 @@ const initMidtrans = () => {
 
 const snap = initMidtrans();
 
-// Create donation and get payment token
 const createDonation = async (req, res) => {
     try {
         const { project_id, donatorName, donatorEmail, amount } = req.body;
 
-        if (!amount || amount <= 0) {
+        if (!project_id || !amount || amount <= 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Amount harus lebih besar dari 0'
+                message: 'Project ID dan amount harus lebih besar dari 0'
             });
         }
 
-        // Generate unique order ID
         const orderId = `DON-${project_id}-${Date.now()}`;
 
         const conn = await pool.getConnection();
         try {
-            // Get project details
             const [projectResult] = await conn.query(
                 'CALL sp_get_project_detail(?)',
                 [project_id]
@@ -54,10 +50,16 @@ const createDonation = async (req, res) => {
 
             const project = projectResult[0][0];
 
-            // Create Midtrans transaction
+            const [donationResult] = await conn.query(
+                'CALL sp_create_donation(?, ?, ?, ?)',
+                [project_id, donatorName || 'Anonymous', donatorEmail || null, amount]
+            );
+
+            const donation = donationResult[0][0];
+
             const parameter = {
                 transaction_details: {
-                    order_id: orderId,
+                    order_id: donation.external_id,
                     gross_amount: parseInt(amount)
                 },
                 customer_details: {
@@ -71,31 +73,18 @@ const createDonation = async (req, res) => {
                     name: project.project_name
                 }],
                 callbacks: {
-                    finish: `${process.env.FRONTEND_URL}/donation/finish?order_id=${orderId}`
+                    finish: `${process.env.FRONTEND_URL}/donation/finish?order_id=${donation.external_id}`
                 }
             };
 
-            console.log('Midtrans Config:', {
-                isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
-                serverKey: process.env.MIDTRANS_SERVER_KEY?.substring(0, 15) + '...',
-                url: process.env.MIDTRANS_IS_PRODUCTION === 'true' 
-                    ? 'https://app.midtrans.com' 
-                    : 'https://app.sandbox.midtrans.com'
-            });
-
             const transaction = await snap.createTransaction(parameter);
-
-            // Create donation with external_id using webhook handler
-            await conn.query(
-                'CALL sp_handle_payment_webhook(?, ?, ?, ?, ?, ?)',
-                [orderId, project_id, donatorName, donatorEmail, amount, 'PENDING']
-            );
 
             res.status(200).json({
                 success: true,
                 message: 'Token pembayaran berhasil dibuat',
                 data: {
-                    orderId,
+                    donation_id: donation.donation_id,
+                    orderId: donation.external_id,
                     token: transaction.token,
                     redirectUrl: transaction.redirect_url
                 }
@@ -112,14 +101,12 @@ const createDonation = async (req, res) => {
     }
 };
 
-// Midtrans webhook handler
 const handleWebhook = async (req, res) => {
     try {
         const notification = req.body;
 
         console.log('Webhook received:', JSON.stringify(notification, null, 2));
 
-        // Validasi notification
         if (!notification.order_id) {
             console.error('Order ID tidak ditemukan dalam notification');
             return res.status(400).json({
@@ -134,9 +121,8 @@ const handleWebhook = async (req, res) => {
 
         console.log(`Transaction notification: ${orderId} - ${transactionStatus}`);
 
-        // PERBAIKAN: Jangan gunakan snap.transaction.notification()
-        // Langsung proses berdasarkan notification body yang dikirim Midtrans
         let paymentStatus = 'PENDING';
+        let paidAmount = notification.gross_amount || null;
 
         if (transactionStatus === 'capture') {
             if (fraudStatus === 'accept') {
@@ -150,35 +136,14 @@ const handleWebhook = async (req, res) => {
 
         const conn = await pool.getConnection();
         try {
-            // Get donation by external_id
-            const [donationResult] = await conn.query(
-                'CALL sp_get_donation_by_external_id(?)',
-                [orderId]
+            const [result] = await conn.query(
+                'CALL sp_handle_payment_webhook(?, ?, ?)',
+                [orderId, paymentStatus, paidAmount]
             );
 
-            if (!donationResult[0] || donationResult[0].length === 0) {
-                console.error('Donation not found for order:', orderId);
-                return res.status(404).json({
-                    success: false,
-                    message: 'Donasi tidak ditemukan'
-                });
-            }
+            const webhookResult = result[0][0];
 
-            const donation = donationResult[0][0];
-
-            console.log('Current donation status:', donation.payment_status);
-            console.log('New payment status:', paymentStatus);
-
-            // Update donation status
-            if (paymentStatus === 'COMPLETED' && donation.payment_status !== 'COMPLETED') {
-                await conn.query('CALL sp_confirm_donation(?)', [donation.donation_id]);
-                console.log('✅ Donation confirmed:', donation.donation_id);
-            } else if (paymentStatus === 'FAILED' && donation.payment_status === 'PENDING') {
-                await conn.query('CALL sp_fail_donation(?)', [donation.donation_id]);
-                console.log('❌ Donation marked as failed:', donation.donation_id);
-            } else {
-                console.log('ℹ️ No status update needed');
-            }
+            console.log('Webhook processed:', webhookResult);
 
             res.status(200).json({
                 success: true,
@@ -200,16 +165,16 @@ const handleWebhook = async (req, res) => {
     }
 };
 
-// Get public donations for a project
 const getPublicDonations = async (req, res) => {
     try {
         const { projectId } = req.params;
+        const { limit, offset } = req.query;
 
         const conn = await pool.getConnection();
         try {
             const [result] = await conn.query(
-                'CALL sp_get_public_donations(?)',
-                [projectId || null]
+                'CALL sp_get_public_donations(?, ?, ?)',
+                [projectId || null, limit || 50, offset || 0]
             );
 
             res.status(200).json({
@@ -228,7 +193,6 @@ const getPublicDonations = async (req, res) => {
     }
 };
 
-// Check donation status
 const checkDonationStatus = async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -263,7 +227,6 @@ const checkDonationStatus = async (req, res) => {
     }
 };
 
-// Handle donation finish (redirect from Midtrans)
 const handleDonationFinish = async (req, res) => {
     try {
         const { order_id, status_code, transaction_status } = req.query;
@@ -283,7 +246,6 @@ const handleDonationFinish = async (req, res) => {
 
         const conn = await pool.getConnection();
         try {
-            // Get donation details
             const [donationResult] = await conn.query(
                 'CALL sp_get_donation_by_external_id(?)',
                 [order_id]
@@ -301,7 +263,6 @@ const handleDonationFinish = async (req, res) => {
 
             const donation = donationResult[0][0];
 
-            // Get project details
             const [projectResult] = await conn.query(
                 'CALL sp_get_project_detail(?)',
                 [donation.project_id]
@@ -309,7 +270,6 @@ const handleDonationFinish = async (req, res) => {
 
             const project = projectResult[0] && projectResult[0][0] ? projectResult[0][0] : null;
 
-            // Determine status message based on transaction status
             let paymentStatus = 'PENDING';
             let statusMessage = 'Pembayaran sedang diproses';
 
