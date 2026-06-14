@@ -1,0 +1,1381 @@
+{
+  "info": {
+    "name": "Fundraising Platform API - Complete",
+    "description": "Complete API documentation for Fundraising Platform with Authentication, Projects, Donations, Payouts, and Admin features",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "project_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "donation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payout_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verification_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register Fundraiser",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.user_id) {",
+                  "        pm.environment.set('user_id', jsonData.data.user_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_name\": \"Test User\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Fundraiser",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.environment.set('jwt_token', jsonData.token);",
+                  "    }",
+                  "    if (jsonData.user && jsonData.user.user_id) {",
+                  "        pm.environment.set('user_id', jsonData.user.user_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.environment.set('admin_token', jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@gmail.com\",\n    \"password\": \"123123123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login/admin",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login", "admin"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth - Start",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth - Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/callback",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "callback"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth - Failure",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/failure",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "failure"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Get All Active Projects",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/public?limit=20&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "public"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Search Projects",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/search?keyword=pendidikan&limit=20&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "search"],
+                  "query": [
+                    {
+                      "key": "keyword",
+                      "value": "pendidikan"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project Summary (All)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/summary",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "summary"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project Summary (Specific)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/summary/{{project_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "summary", "{{project_id}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project Detail",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/{{project_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "{{project_id}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Project Donations",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/{{project_id}}/donations?limit=50&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "{{project_id}}", "donations"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "User (Auth)",
+          "item": [
+            {
+              "name": "Create Project",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    var jsonData = pm.response.json();",
+                      "    if (jsonData.data && jsonData.data.project_id) {",
+                      "        pm.environment.set('project_id', jsonData.data.project_id);",
+                      "    }",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"title\": \"Bantuan Pendidikan Anak Yatim\",\n    \"description\": \"Program bantuan pendidikan untuk anak yatim di daerah terpencil\",\n    \"target_amount\": 50000000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/project/create",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "create"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My All Projects",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/user/all?limit=20&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "user", "all"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get My Finished Projects",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/user/finished?limit=20&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "user", "finished"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Project",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"projectName\": \"Bantuan Pendidikan Anak Yatim (Updated)\",\n    \"projectDesc\": \"Program bantuan pendidikan yang telah diperbarui\",\n    \"targetAmount\": 75000000\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/project/{{project_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "{{project_id}}"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Close Project",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/project/{{project_id}}/close",
+                  "host": ["{{base_url}}"],
+                  "path": ["project", "{{project_id}}", "close"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Donations",
+      "item": [
+        {
+          "name": "Create Donation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data) {",
+                  "        if (jsonData.data.donation_id) {",
+                  "            pm.environment.set('donation_id', jsonData.data.donation_id);",
+                  "        }",
+                  "        if (jsonData.data.orderId) {",
+                  "            pm.environment.set('order_id', jsonData.data.orderId);",
+                  "        }",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"project_id\": 1,\n    \"donatorName\": \"Jane Smith\",\n    \"donatorEmail\": \"jane.smith@example.com\",\n    \"amount\": 100000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/donation/create",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Donations (All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/donation/public?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "public"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Donations by Project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/donation/public/{{project_id}}?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "public", "{{project_id}}"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Donation Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/donation/status/{{order_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "status", "{{order_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Donation Finish Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/donation/finish?order_id={{order_id}}&status_code=200&transaction_status=settlement",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "finish"],
+              "query": [
+                {
+                  "key": "order_id",
+                  "value": "{{order_id}}"
+                },
+                {
+                  "key": "status_code",
+                  "value": "200"
+                },
+                {
+                  "key": "transaction_status",
+                  "value": "settlement"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Midtrans Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"order_id\": \"DON-1-1234567890\",\n    \"transaction_status\": \"settlement\",\n    \"fraud_status\": \"accept\",\n    \"gross_amount\": \"100000\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/donation/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["donation", "webhook"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payouts",
+      "item": [
+        {
+          "name": "Request Payout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.payout_id) {",
+                  "        pm.environment.set('payout_id', jsonData.data.payout_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"amount\": 1000000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payout/project/{{project_id}}/request",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "project", "{{project_id}}", "request"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payout Overview",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payout/project/{{project_id}}/overview",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "project", "{{project_id}}", "overview"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Payout Eligibility",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payout/project/{{project_id}}/eligibility",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "project", "{{project_id}}", "eligibility"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Payouts",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payout/my-payouts",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "my-payouts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payout Detail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payout/{{payout_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "{{payout_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Payout Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payout/{{payout_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["payout", "{{payout_id}}", "cancel"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Verification",
+      "item": [
+        {
+          "name": "Upload Verification Document",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.verification_id) {",
+                  "        pm.environment.set('verification_id', jsonData.data.verification_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"doc_path\": \"/uploads/verification/ktp-12345.pdf\",\n    \"notes\": \"KTP dan dokumen pendukung\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/verification/upload",
+              "host": ["{{base_url}}"],
+              "path": ["verification", "upload"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Verification Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/verification/status",
+              "host": ["{{base_url}}"],
+              "path": ["verification", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Pending Verifications (Admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/verification/pending?limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["verification", "pending"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Verifications",
+          "item": [
+            {
+              "name": "Get Pending Verifications",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/pending?limit=50&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "verifications", "pending"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Verification",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notes\": \"Dokumen lengkap dan valid\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/{{verification_id}}/approve",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "verifications", "{{verification_id}}", "approve"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject Verification",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notes\": \"Dokumen tidak lengkap, harap upload ulang dengan dokumen yang jelas\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/verifications/{{verification_id}}/reject",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "verifications", "{{verification_id}}", "reject"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Projects",
+          "item": [
+            {
+              "name": "Get All Projects",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/projects?limit=50&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "projects"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Pending Projects",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/projects/pending?limit=50&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "projects", "pending"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject Project",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"Deskripsi project tidak sesuai ketentuan\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/projects/{{project_id}}/reject",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "projects", "{{project_id}}", "reject"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Close Project (Admin)",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"reason\": \"Target sudah tercapai\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/projects/{{project_id}}/close",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "projects", "{{project_id}}", "close"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payouts",
+          "item": [
+            {
+              "name": "Get All Payouts",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/payouts?limit=50&offset=0",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "payouts"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Payout",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/payouts/{{payout_id}}/approve",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "payouts", "{{payout_id}}", "approve"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reject Payout",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"notes\": \"Data rekening tidak sesuai dengan dokumen verifikasi\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/payouts/{{payout_id}}/reject",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "payouts", "{{payout_id}}", "reject"]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark Payout Transferred",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"transfer_reference\": \"TRF-2024-001\",\n    \"notes\": \"Transfer berhasil dilakukan\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/payouts/{{payout_id}}/transfer",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "payouts", "{{payout_id}}", "transfer"]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Utilities",
+          "item": [
+            {
+              "name": "Recalculate Collected Amount",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{admin_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"project_id\": 1\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/recalculate",
+                  "host": ["{{base_url}}"],
+                  "path": ["admin", "recalculate"]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

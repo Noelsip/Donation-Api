@@ -13,7 +13,7 @@ const initMidtrans = () => {
     }
 
     return new midtransClient.Snap({
-        isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'true',
+        isProduction: process.env.MIDTRANS_IS_PRODUCTION === 'false',
         serverKey: serverKey,
         clientKey: clientKey
     });

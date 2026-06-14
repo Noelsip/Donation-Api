@@ -36,12 +36,13 @@ app.get('/health', (req, res) => {
 })
 
 app.use('/auth', authRouter);
-app.use('/auth', oauthRouter);
+app.use('/auth', oauthRouter);~
 app.use('/project', projectRouter);
 app.use('/admin', adminRoutes);
 app.use('/donation', donationRouter);
 app.use('/payout', payoutRouter);
 app.use('/verification', verificationRouter);
+app.use('/deleteUser', require('./routes/deleteUser.js'));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,() => {

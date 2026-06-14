@@ -51,118 +51,94 @@ const registerFundraiser = async (req, res) => {
 };
 
 const loginFundraiser = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({
-            message: 'Email dan password wajib diisi'
-        });
-    }
-
     try {
-        const [results] = await pool.query(
-            'CALL sp_login_fundraiser(?)',
-            [email]
-        );
+        const { email, password } = req.body;
 
-        const user = results[0][0];
+        const conn = await pool.getConnection();
+        try {
+            const [result] = await conn.query(
+                'CALL sp_login_fundraiser(?)',
+                [email]
+            );
 
-        if (!user) {
-            return res.status(401).json({
-                message: 'Email atau password salah'
-            });
-        }
+            const user = result[0][0];
 
-        const isPasswordValid = await bcrypt.compare(password, user.hashed_password);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                message: 'Email atau password salah'
-            });
-        }
-
-        const token = jwt.sign(
-            {
-                user_id: user.user_id,
-                role: user.role
-            },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        return res.status(200).json({
-            message: 'Login berhasil',
-            user: {
-                user_id: user.user_id,
-                user_name: user.user_name,
-                email: user.email,
-                role: user.role,
-                verified_at: user.verified_at
+            if (!user) {
+                return res.status(401).json({
+                    message: 'Email atau password salah'
+                });
             }
-        });
+
+            const token = jwt.sign(
+                { user_id: user.user_id, role: user.role },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            res.status(200).json({
+                message: 'Login berhasil',
+                token: token,
+                user: {
+                    user_id: user.user_id,
+                    user_name: user.user_name,
+                    email: user.email,
+                    role: user.role,
+                    verification_status: user.verification_status
+                }
+            });
+        } finally {
+            conn.release();
+        }
     } catch (error) {
         console.error('Error login fundraiser:', error);
-        return res.status(500).json({
-            message: 'Terjadi kesalahan saat login',
-            error: error.sqlMessage || error.message
+        res.status(500).json({
+            message: 'Terjadi kesalahan pada server'
         });
     }
 };
 
 const loginAdmin = async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({
-            message: 'Email dan password wajib diisi'
-        });
-    }
-
     try {
-        const [results] = await pool.query(
-            'CALL sp_login_admin(?)',
-            [email]
-        );
+        const { email, password } = req.body;
 
-        const admin = results[0][0];
+        const conn = await pool.getConnection();
+        try {
+            const [result] = await conn.query(
+                'CALL sp_login_admin(?)',
+                [email]
+            );
 
-        if (!admin) {
-            return res.status(401).json({
-                message: 'Email atau password salah'
-            });
-        }
+            const user = result[0][0];
 
-        const isPasswordValid = await bcrypt.compare(password, admin.hashed_password);
-
-        if (!isPasswordValid) {
-            return res.status(401).json({
-                message: 'Email atau password salah'
-            });
-        }
-
-        const token = jwt.sign(
-            {
-                user_id: admin.user_id,
-                role: admin.role
-            },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        return res.status(200).json({
-            message: 'Login admin berhasil',
-            user: {
-                user_id: admin.user_id,
-                user_name: admin.user_name,
-                email: admin.email,
-                role: admin.role
+            if (!user) {
+                return res.status(401).json({
+                    message: 'Email atau password salah'
+                });
             }
-        });
+
+            const token = jwt.sign(
+                { user_id: user.user_id, role: user.role },
+                JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            res.status(200).json({
+                message: 'Login admin berhasil',
+                token: token,
+                user: {
+                    user_id: user.user_id,
+                    user_name: user.user_name,
+                    email: user.email,
+                    role: user.role
+                }
+            });
+        } finally {
+            conn.release();
+        }
     } catch (error) {
         console.error('Error login admin:', error);
-        return res.status(500).json({
-            message: 'Terjadi kesalahan saat login',
-            error: error.sqlMessage || error.message
+        res.status(500).json({
+            message: 'Terjadi kesalahan pada server'
         });
     }
 };
